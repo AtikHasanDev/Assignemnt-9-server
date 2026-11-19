@@ -4,6 +4,8 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { env } from './config/env.js';
 import { serviceRoutes } from './services/routes.js';
+import { technicianServiceRoutes } from './services/technician-routes.js';
+import { uploadRoutes } from './services/upload.js';
 
 export function createApp({ checkDatabase = async () => false, auth, authorization, db } = {}) {
   const app = express();
@@ -19,7 +21,16 @@ export function createApp({ checkDatabase = async () => false, auth, authorizati
 
   if (auth) app.all('/api/auth/*splat', toNodeHandler(auth));
   // Stripe raw-body handler must also be mounted before express.json.
-  app.use(express.json({ limit: '1mb' }));
+  app.use(express.json({ limit: '7mb' }));
+  if (db && authorization) {
+    // Route-specific mounting preserves anonymous GET access to public listings.
+    const technician = technicianServiceRoutes(db, authorization);
+    app.use('/api/services', (req, res, next) => {
+      if ((req.method === 'GET' && req.path === '/my') || ['POST', 'PATCH', 'DELETE'].includes(req.method)) return technician(req, res, next);
+      next();
+    });
+    app.use('/api/uploads', uploadRoutes(authorization));
+  }
   if (db) app.use('/api/services', serviceRoutes(db));
   if (auth && authorization) {
     app.post('/api/token', async (req, res, next) => {

@@ -50,6 +50,10 @@ Index initialization is repeatable and does not remove existing data or silently
 
 ## Validation
 
+Part 6 adds technician-only POST /api/services, GET /api/services/my, PATCH /api/services/:id, PATCH /api/services/:id/availability, and DELETE /api/services/:id. Creation always sets pending approval and copies the authenticated technician identity. Full validated edits reset approval to pending; availability-only updates preserve approval. Updates/deletion match both id and authenticated owner email. Booking snapshots will remain independent of deleted services.
+
+POST /api/uploads accepts an authenticated user's JSON body with image as plain base64. Only PNG, JPEG, or WebP signatures up to 5 MB are accepted. It uploads to ImgBB server-side and returns only the hosted URL. Set IMGBB_API_KEY in the ignored .env before live use; without it, uploads return 503. This integration has validation tests but has not been verified against a live ImgBB key. The service form with file selection is scheduled in a later client milestone.
+
 Part 5 exposes public GET /api/services and GET /api/services/:id. Listings accept search, category, serviceMode, sort (newest, price-asc, price-desc), page, and limit (1–48). Search is a literal, case-insensitive MongoDB regex on title/category. Filtering, sorting, counts, skip, and limit happen in MongoDB. Only approved and available services are returned; unavailable/missing details return 404. Technician details expose only name, image, area, and bio. No data is seeded by these routes.
 
 Part 4 adds POST /api/token (valid BetterAuth session plus trusted Origin required) and GET /api/me (Bearer JWT required). JWTs expire after 15 minutes and validate HS256, issuer, audience, subject, and account existence. Set an independent JWT_SECRET of at least 32 random characters in .env; a local value has been generated during development. Never commit actual secrets.
