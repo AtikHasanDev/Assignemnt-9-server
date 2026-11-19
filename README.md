@@ -50,6 +50,10 @@ Index initialization is repeatable and does not remove existing data or silently
 
 ## Validation
 
+Part 8 adds customer/JWT-protected POST /api/bookings and GET /api/bookings/my. Request input is serviceId, customerPhone, address, preferredDate (YYYY-MM-DD), and problemDescription (20–3000 characters). Date-only values are checked against the current day in Asia/Dhaka and stored as UTC midnight representing the requested calendar date. Phone numbers accept 7–15 digits with common formatting characters; addresses require 10–500 characters.
+
+The server reloads the approved/available service, rejects requests for an owned service, copies immutable service/technician/customer snapshots, and sets requested/unpaid and the service's base price itself. The partial unique index rejects simultaneous duplicate active requests with 409. User-supplied identity, status, price, and payment fields are ignored. History begins at requested. GET /my always scopes to the authenticated customer, regardless of email query parameters. Unit tests exercise duplicate-key translation; the index itself was created during the earlier Atlas verification.
+
 Part 7 adds JWT/admin-protected moderation endpoints:
 - GET /api/admin/users: paginated public account summaries (no credentials or auth tokens).
 - PATCH /api/admin/users/:id/role: customer, technician, or admin; the acting admin cannot change their own role.
