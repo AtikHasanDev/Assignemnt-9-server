@@ -3,7 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import { env } from './config/env.js';
 
-export function createApp() {
+export function createApp({ checkDatabase = async () => false } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet());
@@ -20,6 +20,15 @@ export function createApp() {
   app.get('/api/health', (_req, res) => res.json({
     status: 'ok', service: 'fixmate-api', version: '0.1.0',
   }));
+  // Liveness stays independent of MongoDB; readiness reflects a real ping.
+  app.get('/api/ready', async (_req, res) => {
+    try {
+      const ready = await checkDatabase();
+      res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'unavailable', database: ready ? 'connected' : 'unavailable' });
+    } catch {
+      res.status(503).json({ status: 'unavailable', database: 'unavailable' });
+    }
+  });
   app.use((_req, res) => res.status(404).json({ message: 'API route not found.' }));
   app.use((error, _req, res, _next) => {
     const status = Number.isInteger(error.status) && error.status >= 400 && error.status <= 599 ? error.status : 500;
@@ -28,4 +37,3 @@ export function createApp() {
   });
   return app;
 }
-

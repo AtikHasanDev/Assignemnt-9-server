@@ -1,39 +1,63 @@
 # FixMate API
 
-Express API for FixMate, a pay-after-completion repair service platform.
+Express and MongoDB API for FixMate, a pay-after-completion repair service platform.
 
 ## Current progress
 
-Part 1 includes the HTTP server, health endpoint, explicit CORS origin allowlist, Helmet response headers, JSON error responses, environment validation, and graceful shutdown. Database, authentication, service and booking APIs, uploads, and payments are not implemented yet.
+Parts 1–2 implement HTTP configuration, exact-origin CORS, Helmet, MongoDB connection pooling, application indexes, startup validation, readiness checks, and graceful database shutdown. Authentication, service/booking endpoints, uploads, payments, and seed records will follow in later parts.
 
-## Run locally
+## Local setup
 
-Requires Node.js 22 or newer.
+Requires Node.js 22+ and MongoDB 6.0+ (Atlas supported).
 
 ```powershell
 npm install
+# Only if .env does not already exist:
 Copy-Item .env.example .env
+# Edit .env locally and add your Atlas URI. Do not commit it.
+npm run db:check
 npm run dev
 ```
 
-GET http://localhost:5000/api/health returns the API service status. This endpoint currently checks HTTP availability only, not a database connection.
-
-## Configuration
-
+Configuration:
 - PORT: HTTP port, default 5000.
-- CLIENT_ORIGINS: comma-separated exact client origins; defaults to http://localhost:3000. No paths or trailing slashes.
+- CLIENT_ORIGINS: comma-separated exact origins, no paths or trailing slashes.
+- MONGODB_URI: required Atlas/standard MongoDB connection string. URL-encode special characters in the database password.
+- MONGODB_DB: database name, default fixmate.
 - NODE_ENV: development or production.
 
-Keep secrets in ignored .env files. MongoDB, BetterAuth, JWT, ImgBB, and Stripe test-mode configuration will be introduced with their integrations. BetterAuth and Stripe webhook handlers must be mounted before the JSON parser.
+Use an Atlas database user with read/write access to the chosen database and allow the development/deployment host through Atlas Network Access. Do not paste connection strings into chat, logs, or Git. Startup fails without a working database and successful index initialization; it never silently falls back to sample data.
 
-## Commands and packages
+## Health and readiness
 
-- npm run dev: restart on source edits.
-- npm start: run the server.
-- npm run check: syntax validation.
-- Packages: Express, cors, dotenv, helmet.
+- GET /api/health: HTTP process liveness only, returns 200 while the server is running.
+- GET /api/ready: performs a database ping; returns 200 when connected and 503 when unavailable. It does not expose hostnames or credentials.
 
-## Deployment
+## Data model and indexes
 
-Not deployed yet. Admin and test accounts have not been created. This directory is a separate Git repository and must be committed independently from the parent client project. The full milestone plan is in the client repository at docs/IMPLEMENTATION_PLAN.md.
+There are four application collections: user (BetterAuth's default identity collection), services, bookings, and payments. BetterAuth will create its own session/account/verification collections later. Do not create a parallel users collection.
 
+- user: unique email and role/creation-time index.
+- services: public availability/approval/newest, category/mode/price, and technician indexes.
+- bookings: a partial unique customerEmail + serviceId index applies only to requested, accepted, and in-progress records. Concurrent duplicate active requests are rejected by MongoDB. Customer history, technician queues, and admin status queries are indexed.
+- payments: unique bookingId, stripeSessionId, and transactionId; customer, technician, and chronological transaction indexes.
+
+Index initialization is repeatable and does not remove existing data or silently drop indexes. Existing duplicates or incompatible index definitions stop startup and must be investigated. Later API steps must translate duplicate-key errors into user-friendly conflict messages and normalize account emails consistently.
+
+## Validation
+
+```powershell
+npm run check
+npm test
+npm run db:check
+```
+
+The unit tests verify readiness/liveness behavior and error redaction without an Atlas connection. db:check requires actual configuration, initializes the real application indexes, and lists their names. Unit tests alone do not verify MongoDB's unique constraints.
+
+MongoDB design follows the [Node driver connection guidance](https://www.mongodb.com/docs/drivers/node/current/connect/mongoclient/) and [partial unique index documentation](https://www.mongodb.com/docs/manual/core/index-partial/).
+
+## Packages and deployment
+
+Packages: Express, cors, dotenv, helmet, mongodb.
+
+Not deployed. Admin and test accounts have not been created. BetterAuth and Stripe raw-body handlers must be mounted before JSON parsing when implemented. This directory is a separate Git repository and is committed independently from the parent client. Actual .env files remain ignored.

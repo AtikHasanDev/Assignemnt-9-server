@@ -1,20 +1,35 @@
 import { createApp } from './app.js';
 import { env } from './config/env.js';
+import { closeDatabase, connectDatabase, pingDatabase } from './db/mongodb.js';
 
-const server = createApp().listen(env.port, () => {
-  console.log('FixMate API listening at http://localhost:' + env.port);
-});
-
-server.on('error', error => {
-  console.error('Unable to start FixMate API:', error.message);
-  process.exitCode = 1;
-});
-
-function shutdown(signal) {
-  console.log(signal + ': closing HTTP server.');
-  server.close(() => process.exit(0));
-  setTimeout(() => process.exit(1), 10000).unref();
+let server;
+let stopping = false;
+async function shutdown(signal) {
+  if (stopping) return;
+  stopping = true;
+  console.log(signal + ': closing API and database connections.');
+  const timeout = setTimeout(() => process.exit(1), 10000);
+  timeout.unref();
+  if (server) await new Promise(resolve => server.close(resolve));
+  await closeDatabase();
+  clearTimeout(timeout);
 }
-process.once('SIGTERM', () => shutdown('SIGTERM'));
-process.once('SIGINT', () => shutdown('SIGINT'));
+
+try {
+  await connectDatabase();
+  server = createApp({ checkDatabase: pingDatabase }).listen(env.port, () => {
+    console.log('FixMate API ready at http://localhost:' + env.port);
+  });
+  server.on('error', async () => {
+    console.error('Unable to start the HTTP server. Check PORT and whether it is already in use.');
+    process.exitCode = 1;
+    await shutdown('Startup error');
+  });
+  process.once('SIGTERM', () => shutdown('SIGTERM'));
+  process.once('SIGINT', () => shutdown('SIGINT'));
+} catch (error) {
+  console.error(error.message);
+  await closeDatabase();
+  process.exitCode = 1;
+}
 

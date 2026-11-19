@@ -10,12 +10,15 @@
   "scripts": {
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
-    "check": "node --check src/app.js && node --check src/server.js && node --check src/config/env.js"
+    "check": "node --check src/app.js && node --check src/server.js && node --check src/config/env.js && node --check src/db/mongodb.js && node --check src/db/indexes.js && node --check scripts/check-database.js",
+    "test": "node --test",
+    "db:check": "node scripts/check-database.js"
   },
   "dependencies": {
-    "express": "5.3.0",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "helmet": "^8.1.0"
+    "express": "5.3.0",
+    "helmet": "^8.1.0",
+    "mongodb": "7.9.0"
   }
 }
