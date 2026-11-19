@@ -1,9 +1,10 @@
 import express from 'express';
+import { toNodeHandler } from 'better-auth/node';
 import cors from 'cors';
 import helmet from 'helmet';
 import { env } from './config/env.js';
 
-export function createApp({ checkDatabase = async () => false } = {}) {
+export function createApp({ checkDatabase = async () => false, auth } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet());
@@ -15,7 +16,8 @@ export function createApp({ checkDatabase = async () => false } = {}) {
     },
   }));
 
-  // BetterAuth and Stripe raw-body handlers must be mounted before express.json.
+  if (auth) app.all('/api/auth/*splat', toNodeHandler(auth));
+  // Stripe raw-body handler must also be mounted before express.json.
   app.use(express.json({ limit: '1mb' }));
   app.get('/api/health', (_req, res) => res.json({
     status: 'ok', service: 'fixmate-api', version: '0.1.0',

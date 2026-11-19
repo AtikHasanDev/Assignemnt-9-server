@@ -1,4 +1,5 @@
 import { createApp } from './app.js';
+import { createAuth } from './auth/auth.js';
 import { env } from './config/env.js';
 import { closeDatabase, connectDatabase, pingDatabase } from './db/mongodb.js';
 
@@ -17,7 +18,7 @@ async function shutdown(signal) {
 
 try {
   await connectDatabase();
-  server = createApp({ checkDatabase: pingDatabase }).listen(env.port, () => {
+  server = createApp({ checkDatabase: pingDatabase, auth: createAuth() }).listen(env.port, () => {
     console.log('FixMate API ready at http://localhost:' + env.port);
   });
   server.on('error', async () => {

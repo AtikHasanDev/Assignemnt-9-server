@@ -4,7 +4,11 @@ Express and MongoDB API for FixMate, a pay-after-completion repair service platf
 
 ## Current progress
 
-Parts 1–2 implement HTTP configuration, exact-origin CORS, Helmet, MongoDB connection pooling, application indexes, startup validation, readiness checks, and graceful database shutdown. Authentication, service/booking endpoints, uploads, payments, and seed records will follow in later parts.
+Parts 1–3 implement HTTP configuration, CORS, MongoDB and indexes, readiness checks, and BetterAuth email/password endpoints mounted before JSON parsing. Registration accepts customer or technician roles; invalid roles become customer. Role is server-owned and cannot be changed through profile updates. Passwords require six characters plus uppercase and lowercase letters. Service/booking endpoints, JWT authorization, uploads, payments, and seed records follow in later parts.
+
+Authentication requires BETTER_AUTH_URL (the exact API origin) and BETTER_AUTH_SECRET (a random secret of at least 32 characters) in the ignored .env. Keep this secret stable across restarts. The client sends credentialed requests to NEXT_PUBLIC_API_URL. Use localhost for both client and server during development; mixing localhost and 127.0.0.1 can prevent cookies from working. Production origins must be added to CLIENT_ORIGINS and deployment must support credential cookies between client and API.
+
+Optional DNS_SERVERS is a comma-separated list of DNS resolver IPs. It affects only this Node process and can resolve local SRV lookup failures; leave it blank when the system resolver works. Local DNS overrides and actual secrets belong in .env only.
 
 ## Local setup
 

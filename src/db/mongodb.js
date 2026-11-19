@@ -1,3 +1,4 @@
+import '../config/dns.js';
 import { MongoClient } from 'mongodb';
 import { env } from '../config/env.js';
 import { collectionNames, ensureIndexes } from './indexes.js';
@@ -31,6 +32,11 @@ export async function connectDatabase() {
     } finally { connecting = undefined; }
   })();
   return connecting;
+}
+
+export function getMongoClient() {
+  if (!client) throw new Error('Database has not been initialized.');
+  return client;
 }
 
 export function getDatabase() {

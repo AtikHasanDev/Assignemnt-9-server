@@ -21,7 +21,12 @@ if (!/^[a-zA-Z0-9_-]+$/.test(mongodbDb) || Buffer.byteLength(mongodbDb) >= 64) {
   throw new Error('MONGODB_DB must be shorter than 64 bytes and contain only letters, numbers, underscores, or hyphens.');
 }
 
+const authUrl = process.env.BETTER_AUTH_URL || 'http://localhost:5000';
+if (new URL(authUrl).origin !== authUrl) throw new Error('BETTER_AUTH_URL must be an exact origin without a trailing slash.');
+
 export const env = Object.freeze({
+  authUrl,
+  authSecret: process.env.BETTER_AUTH_SECRET || '',
   mongodbUri,
   mongodbDb,
   port,
