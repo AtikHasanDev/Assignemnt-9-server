@@ -25,6 +25,9 @@ const authUrl = process.env.BETTER_AUTH_URL || 'http://localhost:5000';
 if (new URL(authUrl).origin !== authUrl) throw new Error('BETTER_AUTH_URL must be an exact origin without a trailing slash.');
 
 export const env = Object.freeze({
+  stripeSecret: process.env.STRIPE_SECRET_KEY?.trim() || '',
+  stripeWebhookSecret: process.env.STRIPE_WEBHOOK_SECRET?.trim() || '',
+  paymentOrigin: process.env.PAYMENT_CLIENT_ORIGIN || clientOrigins[0],
   imgbbKey: process.env.IMGBB_API_KEY || '',
   jwtSecret: process.env.JWT_SECRET || '',
   authUrl,

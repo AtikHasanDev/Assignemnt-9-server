@@ -10,8 +10,10 @@ import { adminRoutes } from './admin/routes.js';
 import { bookingRoutes } from './bookings/routes.js';
 import { dashboardRoutes } from './dashboard/routes.js';
 import { userRoutes } from './users/routes.js';
+import { createPaymentService } from './payments/service.js';
+import { paymentRoutes, paymentWebhook } from './payments/routes.js';
 
-export function createApp({ checkDatabase = async () => false, auth, authorization, db } = {}) {
+export function createApp({ checkDatabase = async () => false, auth, authorization, db, payments } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet());
@@ -24,9 +26,11 @@ export function createApp({ checkDatabase = async () => false, auth, authorizati
   }));
 
   if (auth) app.all('/api/auth/*splat', toNodeHandler(auth));
-  // Stripe raw-body handler must also be mounted before express.json.
+  const paymentService = payments || (db ? createPaymentService(db) : null);
+  if (paymentService) app.post('/api/payments/webhook', express.raw({ type: 'application/json', limit: '1mb' }), paymentWebhook(paymentService));
   app.use(express.json({ limit: '7mb' }));
   if (db && authorization) {
+    app.use('/api/payments', paymentRoutes(paymentService, authorization));
     app.use('/api/users', userRoutes(db, authorization));
     app.use('/api/dashboard', dashboardRoutes(db, authorization));
     app.use('/api/bookings', bookingRoutes(db, authorization));

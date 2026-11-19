@@ -8,6 +8,8 @@
     "node": ">=22.0.0"
   },
   "scripts": {
+    "stripe:listen": "node scripts/listen-stripe.js",
+    "stripe:check": "node scripts/check-stripe-checkout.js",
     "dev": "node --watch src/server.js",
     "start": "node src/server.js",
     "check": "node --check src/app.js && node --check src/server.js && node --check src/config/env.js && node --check src/db/mongodb.js && node --check src/db/indexes.js && node --check scripts/check-database.js",
@@ -22,6 +24,7 @@
     "express": "5.3.0",
     "helmet": "^8.1.0",
     "jose": "6.2.18",
-    "mongodb": "7.9.0"
+    "mongodb": "7.9.0",
+    "stripe": "^23.2.0"
   }
 }
