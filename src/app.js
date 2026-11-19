@@ -9,6 +9,7 @@ import { uploadRoutes } from './services/upload.js';
 import { adminRoutes } from './admin/routes.js';
 import { bookingRoutes } from './bookings/routes.js';
 import { dashboardRoutes } from './dashboard/routes.js';
+import { userRoutes } from './users/routes.js';
 
 export function createApp({ checkDatabase = async () => false, auth, authorization, db } = {}) {
   const app = express();
@@ -26,6 +27,7 @@ export function createApp({ checkDatabase = async () => false, auth, authorizati
   // Stripe raw-body handler must also be mounted before express.json.
   app.use(express.json({ limit: '7mb' }));
   if (db && authorization) {
+    app.use('/api/users', userRoutes(db, authorization));
     app.use('/api/dashboard', dashboardRoutes(db, authorization));
     app.use('/api/bookings', bookingRoutes(db, authorization));
     app.use('/api/admin', adminRoutes(db, authorization));

@@ -4,6 +4,7 @@ import { createAuthMiddleware, APIError } from 'better-auth/api';
 import { env } from '../config/env.js';
 import { getDatabase, getMongoClient } from '../db/mongodb.js';
 import { registrationRole, validatePassword } from './policy.js';
+import { validateProfile } from '../users/validation.js';
 
 export function createAuth() {
   if (!env.authSecret || env.authSecret.length < 32) throw new Error('BETTER_AUTH_SECRET must contain at least 32 characters.');
@@ -25,8 +26,9 @@ export function createAuth() {
         if (typeof ctx.body?.name !== 'string' || !ctx.body.name.trim()) throw new APIError('BAD_REQUEST', { message: 'Name is required.' });
       }
       if (ctx.path === '/change-password' || ctx.path === '/reset-password') validatePassword(ctx.body?.newPassword);
-      if (ctx.path === '/update-user' && Object.hasOwn(ctx.body || {}, 'role')) {
-        throw new APIError('FORBIDDEN', { message: 'Roles cannot be changed through profile updates.' });
+      if (ctx.path === '/update-user') {
+        try { validateProfile(ctx.body); }
+        catch (error) { throw new APIError(error.status === 403 ? 'FORBIDDEN' : 'BAD_REQUEST', { message: error.message }); }
       }
     }) },
     databaseHooks: { user: { create: { before: async (user, ctx) => ({ data: {
