@@ -6,6 +6,7 @@ import { env } from './config/env.js';
 import { serviceRoutes } from './services/routes.js';
 import { technicianServiceRoutes } from './services/technician-routes.js';
 import { uploadRoutes } from './services/upload.js';
+import { adminRoutes } from './admin/routes.js';
 
 export function createApp({ checkDatabase = async () => false, auth, authorization, db } = {}) {
   const app = express();
@@ -23,6 +24,7 @@ export function createApp({ checkDatabase = async () => false, auth, authorizati
   // Stripe raw-body handler must also be mounted before express.json.
   app.use(express.json({ limit: '7mb' }));
   if (db && authorization) {
+    app.use('/api/admin', adminRoutes(db, authorization));
     // Route-specific mounting preserves anonymous GET access to public listings.
     const technician = technicianServiceRoutes(db, authorization);
     app.use('/api/services', (req, res, next) => {

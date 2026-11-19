@@ -50,6 +50,14 @@ Index initialization is repeatable and does not remove existing data or silently
 
 ## Validation
 
+Part 7 adds JWT/admin-protected moderation endpoints:
+- GET /api/admin/users: paginated public account summaries (no credentials or auth tokens).
+- PATCH /api/admin/users/:id/role: customer, technician, or admin; the acting admin cannot change their own role.
+- GET /api/admin/services: pending by default; approvalStatus accepts all, pending, approved, or rejected.
+- PATCH /api/admin/services/:id/approval: approved or rejected only, with moderator identity and timestamp.
+
+Admin lists accept page and limit (up to 100 per page). Updates allow only intended fields and report missing records as 404. Role enforcement reads MongoDB on each JWT request, so newly changed roles apply immediately to business APIs. Admin dashboard screens are scheduled in later client milestones.
+
 Part 6 adds technician-only POST /api/services, GET /api/services/my, PATCH /api/services/:id, PATCH /api/services/:id/availability, and DELETE /api/services/:id. Creation always sets pending approval and copies the authenticated technician identity. Full validated edits reset approval to pending; availability-only updates preserve approval. Updates/deletion match both id and authenticated owner email. Booking snapshots will remain independent of deleted services.
 
 POST /api/uploads accepts an authenticated user's JSON body with image as plain base64. Only PNG, JPEG, or WebP signatures up to 5 MB are accepted. It uploads to ImgBB server-side and returns only the hosted URL. Set IMGBB_API_KEY in the ignored .env before live use; without it, uploads return 503. This integration has validation tests but has not been verified against a live ImgBB key. The service form with file selection is scheduled in a later client milestone.
