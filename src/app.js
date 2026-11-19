@@ -3,8 +3,9 @@ import { toNodeHandler, fromNodeHeaders } from 'better-auth/node';
 import cors from 'cors';
 import helmet from 'helmet';
 import { env } from './config/env.js';
+import { serviceRoutes } from './services/routes.js';
 
-export function createApp({ checkDatabase = async () => false, auth, authorization } = {}) {
+export function createApp({ checkDatabase = async () => false, auth, authorization, db } = {}) {
   const app = express();
   app.disable('x-powered-by');
   app.use(helmet());
@@ -19,6 +20,7 @@ export function createApp({ checkDatabase = async () => false, auth, authorizati
   if (auth) app.all('/api/auth/*splat', toNodeHandler(auth));
   // Stripe raw-body handler must also be mounted before express.json.
   app.use(express.json({ limit: '1mb' }));
+  if (db) app.use('/api/services', serviceRoutes(db));
   if (auth && authorization) {
     app.post('/api/token', async (req, res, next) => {
       res.set('Cache-Control', 'no-store');

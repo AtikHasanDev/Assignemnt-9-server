@@ -50,6 +50,8 @@ Index initialization is repeatable and does not remove existing data or silently
 
 ## Validation
 
+Part 5 exposes public GET /api/services and GET /api/services/:id. Listings accept search, category, serviceMode, sort (newest, price-asc, price-desc), page, and limit (1–48). Search is a literal, case-insensitive MongoDB regex on title/category. Filtering, sorting, counts, skip, and limit happen in MongoDB. Only approved and available services are returned; unavailable/missing details return 404. Technician details expose only name, image, area, and bio. No data is seeded by these routes.
+
 Part 4 adds POST /api/token (valid BetterAuth session plus trusted Origin required) and GET /api/me (Bearer JWT required). JWTs expire after 15 minutes and validate HS256, issuer, audience, subject, and account existence. Set an independent JWT_SECRET of at least 32 random characters in .env; a local value has been generated during development. Never commit actual secrets.
 
 createAuthorization provides verifyToken, verifyCustomer, verifyTechnician, and verifyAdmin. Private business routes added in later parts must apply verifyToken before the appropriate role middleware and scope database queries to req.user. Roles are loaded from MongoDB on each request. The JWT suite verifies missing/invalid/expired/wrong-key tokens, role changes, and deleted users.

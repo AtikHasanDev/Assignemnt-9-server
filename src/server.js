@@ -21,7 +21,7 @@ async function shutdown(signal) {
 
 try {
   await connectDatabase();
-  server = createApp({ checkDatabase: pingDatabase, auth: createAuth(), authorization: createAuthorization({
+  server = createApp({ db: getDatabase(), checkDatabase: pingDatabase, auth: createAuth(), authorization: createAuthorization({
     secret: env.jwtSecret,
     findUser: id => getDatabase().collection('user').findOne({ _id: new ObjectId(id) }),
   }) }).listen(env.port, () => {
