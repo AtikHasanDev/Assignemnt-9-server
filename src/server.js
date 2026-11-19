@@ -1,5 +1,8 @@
 import { createApp } from './app.js';
 import { createAuth } from './auth/auth.js';
+import { createAuthorization } from './middleware/auth.js';
+import { getDatabase } from './db/mongodb.js';
+import { ObjectId } from 'mongodb';
 import { env } from './config/env.js';
 import { closeDatabase, connectDatabase, pingDatabase } from './db/mongodb.js';
 
@@ -18,7 +21,10 @@ async function shutdown(signal) {
 
 try {
   await connectDatabase();
-  server = createApp({ checkDatabase: pingDatabase, auth: createAuth() }).listen(env.port, () => {
+  server = createApp({ checkDatabase: pingDatabase, auth: createAuth(), authorization: createAuthorization({
+    secret: env.jwtSecret,
+    findUser: id => getDatabase().collection('user').findOne({ _id: new ObjectId(id) }),
+  }) }).listen(env.port, () => {
     console.log('FixMate API ready at http://localhost:' + env.port);
   });
   server.on('error', async () => {

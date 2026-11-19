@@ -50,6 +50,10 @@ Index initialization is repeatable and does not remove existing data or silently
 
 ## Validation
 
+Part 4 adds POST /api/token (valid BetterAuth session plus trusted Origin required) and GET /api/me (Bearer JWT required). JWTs expire after 15 minutes and validate HS256, issuer, audience, subject, and account existence. Set an independent JWT_SECRET of at least 32 random characters in .env; a local value has been generated during development. Never commit actual secrets.
+
+createAuthorization provides verifyToken, verifyCustomer, verifyTechnician, and verifyAdmin. Private business routes added in later parts must apply verifyToken before the appropriate role middleware and scope database queries to req.user. Roles are loaded from MongoDB on each request. The JWT suite verifies missing/invalid/expired/wrong-key tokens, role changes, and deleted users.
+
 ```powershell
 npm run check
 npm test

@@ -25,6 +25,7 @@ const authUrl = process.env.BETTER_AUTH_URL || 'http://localhost:5000';
 if (new URL(authUrl).origin !== authUrl) throw new Error('BETTER_AUTH_URL must be an exact origin without a trailing slash.');
 
 export const env = Object.freeze({
+  jwtSecret: process.env.JWT_SECRET || '',
   authUrl,
   authSecret: process.env.BETTER_AUTH_SECRET || '',
   mongodbUri,
