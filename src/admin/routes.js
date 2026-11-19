@@ -12,6 +12,29 @@ export function adminRoutes(db, authorization) {
   const router = Router();
   router.use(authorization.verifyToken, authorization.verifyAdmin);
   router.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+  router.get('/bookings', async (req, res, next) => {
+    try {
+      if (Object.keys(req.query).some(key => !['status', 'paymentStatus', 'page', 'limit'].includes(key))) throw badRequest('Invalid booking filter parameter.');
+      const status = req.query.status ?? 'all';
+      const paymentStatus = req.query.paymentStatus ?? 'all';
+      if (!['all', 'requested', 'accepted', 'in-progress', 'completed', 'rejected', 'cancelled'].includes(status)) throw badRequest('Invalid booking status filter.');
+      if (!['all', 'unpaid', 'paid'].includes(paymentStatus)) throw badRequest('Invalid payment status filter.');
+      const filter = {};
+      if (status !== 'all') filter.status = status;
+      if (paymentStatus !== 'all') filter.paymentStatus = paymentStatus;
+      const { page, limit, skip } = pagination(req.query);
+      const bookings = db.collection('bookings');
+      const [items, total] = await Promise.all([
+        bookings.find(filter, { projection: {
+          serviceTitle: 1, category: 1, customerName: 1, customerEmail: 1, customerPhone: 1,
+          technicianName: 1, technicianEmail: 1, address: 1, preferredDate: 1, problemDescription: 1,
+          basePrice: 1, finalAmount: 1, status: 1, paymentStatus: 1, statusHistory: 1, createdAt: 1, updatedAt: 1,
+        } }).sort({ createdAt: -1, _id: -1 }).skip(skip).limit(limit).toArray(),
+        bookings.countDocuments(filter),
+      ]);
+      res.json({ items, total, page, limit, totalPages: Math.ceil(total / limit) });
+    } catch (error) { next(error); }
+  });
   router.get('/users', async (req, res, next) => {
     try {
       const { page, limit, skip } = pagination(req.query);
