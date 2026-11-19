@@ -11,19 +11,30 @@ export function validateImage(value) {
   return value;
 }
 
+export async function uploadToImgBB(image, { key = env.imgbbKey, fetcher = fetch } = {}) {
+  if (!key) throw Object.assign(new Error('Image upload is not configured yet.'), { status: 503 });
+  try {
+    const form = new FormData(); form.set('key', key); form.set('image', image);
+    const response = await fetcher('https://api.imgbb.com/1/upload', { method: 'POST', body: form, signal: AbortSignal.timeout(20000) });
+    const result = await response.json();
+    if (!response.ok || result.success !== true || typeof result.data?.url !== 'string') throw new Error('Invalid provider response');
+    const url = new URL(result.data.url);
+    if (url.protocol !== 'https:' || url.hostname !== 'i.ibb.co' || url.username || url.password || url.port) throw new Error('Invalid provider URL');
+    return url.href;
+  } catch {
+    throw Object.assign(new Error('Image upload is unavailable. Please try again.'), { status: 502 });
+  }
+}
+
 export function uploadRoutes(authorization) {
   const router = Router();
   router.post('/', authorization.verifyToken, async (req, res, next) => {
     try {
       const image = validateImage(req.body?.image);
-      if (!env.imgbbKey) return res.status(503).json({ message: 'Image upload is not configured yet.' });
-      const form = new FormData(); form.set('key', env.imgbbKey); form.set('image', image);
-      const response = await fetch('https://api.imgbb.com/1/upload', { method: 'POST', body: form, signal: AbortSignal.timeout(20000) });
-      const result = await response.json();
-      if (!response.ok || !result.success || !result.data?.url?.startsWith('https://i.ibb.co/')) return res.status(502).json({ message: 'Image upload failed. Please try again.' });
-      res.status(201).json({ url: result.data.url });
+      const url = await uploadToImgBB(image);
+      res.status(201).json({ url });
     } catch (error) {
-      if (!error.status) return res.status(502).json({ message: 'Image upload is unavailable. Please try again.' });
+      if (error.status === 502 || error.status === 503) return res.status(error.status).json({ message: error.message });
       next(error);
     }
   });

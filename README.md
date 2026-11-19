@@ -4,6 +4,8 @@ Express and MongoDB API for FixMate, a pay-after-completion repair service platf
 
 ## Current progress
 
+Part 12 hardens the authenticated ImgBB upload integration: multipart requests have a 20-second timeout; successful URLs must use HTTPS on i.ibb.co without credentials or a custom port. Missing configuration returns 503; network failures, provider failures, invalid JSON, and unsafe response URLs return a safe 502 message. Provider behavior is covered by automated tests. Configure IMGBB_API_KEY in the ignored .env and restart the API before testing real uploads. No live upload has been verified yet.
+
 Parts 1–3 implement HTTP configuration, CORS, MongoDB and indexes, readiness checks, and BetterAuth email/password endpoints mounted before JSON parsing. Registration accepts customer or technician roles; invalid roles become customer. Role is server-owned and cannot be changed through profile updates. Passwords require six characters plus uppercase and lowercase letters. Service/booking endpoints, JWT authorization, uploads, payments, and seed records follow in later parts.
 
 Authentication requires BETTER_AUTH_URL (the exact API origin) and BETTER_AUTH_SECRET (a random secret of at least 32 characters) in the ignored .env. Keep this secret stable across restarts. The client sends credentialed requests to NEXT_PUBLIC_API_URL. Use localhost for both client and server during development; mixing localhost and 127.0.0.1 can prevent cookies from working. Production origins must be added to CLIENT_ORIGINS and deployment must support credential cookies between client and API.
