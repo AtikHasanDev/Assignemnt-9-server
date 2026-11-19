@@ -50,6 +50,8 @@ Index initialization is repeatable and does not remove existing data or silently
 
 ## Validation
 
+Part 10 adds GET /api/dashboard/customer, /api/dashboard/technician, and /api/dashboard/admin. Each endpoint requires a JWT and its matching role. Customer totals/active/completed counts aggregate only bookings with the authenticated customerEmail. Technician totals/approved service counts and pending request counts scope to technicianEmail. Admin totals cover users, technicians, and pending services. Each response also includes a status breakdown for charts; all totals come from database queries and empty datasets produce zeros. Responses use Cache-Control: no-store. Query-string identities cannot alter the scope.
+
 Part 9 adds PATCH /api/bookings/:id/cancel for the owning customer, GET /api/bookings/technician for the logged-in technician (optional status filter), and PATCH /api/bookings/:id/status for the owning technician. The server permits requested→accepted/rejected, accepted→in-progress, and in-progress→completed. Completion requires a positive finalAmount in USD with up to two decimal places. A customer may cancel only requested jobs. Terminal jobs cannot be changed, and these APIs cannot mark a payment paid.
 
 Mutations include owner identity and expected current status in the MongoDB update filter. Competing updates return 409 rather than overwrite another transition. Each successful transition appends statusHistory with a server timestamp and updates updatedAt. Tests cover all status pairs, ownership, wrong roles, amount rules, history, queue scoping, and a simulated acceptance/cancellation race against an in-memory collection. Live Atlas concurrency testing is still part of final integration verification.
