@@ -93,7 +93,7 @@ export function createPaymentService(db, {
     let created;
     try {
       created = await stripe.checkout.sessions.create({
-        mode: 'payment', customer_email: booking.customerEmail,
+        mode: 'payment', adaptive_pricing: { enabled: false }, customer_email: booking.customerEmail,
         client_reference_id: String(booking._id), metadata: { bookingId: String(booking._id), checkoutKey: booking.checkoutKey },
         line_items: [{ quantity: 1, price_data: { currency: 'usd', unit_amount: amount, product_data: { name: 'Completed repair: ' + booking.serviceTitle } } }],
         success_url: origin + '/dashboard/customer/payment/success?session_id={CHECKOUT_SESSION_ID}',

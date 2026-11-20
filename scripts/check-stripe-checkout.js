@@ -25,6 +25,7 @@ try {
   const booking = await db.collection('bookings').findOne({ _id: id }); sessionId = booking.stripeSessionId;
   const session = await stripe.checkout.sessions.retrieve(sessionId);
   assert.equal(session.livemode, false); assert.equal(session.amount_total, 100); assert.equal(session.payment_status, 'unpaid');
+  assert.equal(session.adaptive_pricing?.enabled, false);
   assert.equal(new URL(checkout.url).origin, 'https://checkout.stripe.com');
   assert.equal((await service.fulfill(sessionId, 'checkout-check@example.invalid')).paid, false);
   console.log('PASS: Stripe accepted the saved test key, created a real $1 test Checkout session, and verification correctly reported unpaid. No payment submitted.');

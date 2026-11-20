@@ -4,6 +4,8 @@ Express and MongoDB API for FixMate, a pay-after-completion repair service platf
 
 ## Current progress
 
+Part 20 disables adaptive pricing on new Checkout sessions so the app consistently displays USD. A complete $40 sandbox browser payment, real webhook HTTP 200 delivery, customer/admin history display, and idempotent replay were verified; no real money moved. All 31 server tests pass. Vercel/Render hosting settings are prepared but not deployed yet; see ../docs/DEPLOYMENT.md.
+
 Part 19 adds a rerunnable seed: npm run seed:demo previews the plan; npm run seed:demo -- --apply creates four reserved demo accounts through BetterAuth, twelve approved services, and six unpaid bookings. It preserves existing edits and refuses to overwrite non-seed identities. Device illustrations are generated locally and uploaded to ImgBB; login credentials stay in ignored .env.demo. npm run demo:check passed real multi-role sign-in, moderation, visibility, booking ownership/transition/duplicate/cancellation and unpaid Stripe checks, then cleaned up temporary records. See ../docs/DEMO_ACCOUNTS.md.
 
 Part 18 adds customer-only GET /api/payments/my and administrator-only GET /api/admin/transactions. Both read the verified payments collection with stable paidAt/_id ordering, validated page/limit parameters, total counts, and explicit history-field projections. Customer scope comes from the current authenticated account; query parameters cannot override identity. Responses disable caching. All 31 server tests pass, including payment-history authorization, scope, pagination, malformed-query, projection, and empty-result checks.

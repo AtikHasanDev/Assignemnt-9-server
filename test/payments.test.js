@@ -59,6 +59,7 @@ test('checkout enforces ownership, completion, unpaid state, trusted amounts, an
   assert.equal(a.url, b.url); assert.equal(f.sessions.size, 1);
   for (const call of f.calls) {
     assert.equal(call.params.line_items[0].price_data.unit_amount, 2575);
+    assert.deepEqual(call.params.adaptive_pricing, { enabled: false });
     assert.equal(call.params.customer_email, f.booking.customerEmail);
     assert.equal(call.params.metadata.bookingId, id); assert.equal(call.params.payment_method_types, undefined);
     assert.equal(call.options.idempotencyKey, 'repair-' + f.booking.checkoutKey);
