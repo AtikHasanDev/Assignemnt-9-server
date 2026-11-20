@@ -8,6 +8,8 @@
     "node": ">=22.0.0"
   },
   "scripts": {
+    "seed:demo": "node scripts/seed-demo.js",
+    "demo:check": "node scripts/check-demo-workflows.js",
     "stripe:listen": "node scripts/listen-stripe.js",
     "stripe:check": "node scripts/check-stripe-checkout.js",
     "dev": "node --watch src/server.js",
