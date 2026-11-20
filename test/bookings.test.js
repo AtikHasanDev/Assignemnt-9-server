@@ -6,6 +6,12 @@ import { createAuthorization } from '../src/middleware/auth.js';
 import { validateBooking, dhakaDate } from '../src/bookings/validation.js';
 
 const fields = { serviceId: 'abcdefabcdefabcdefabcdef', customerPhone: '+880 1712345678', address: 'Mirpur 10, Dhaka, Bangladesh', preferredDate: '2099-06-20', problemDescription: 'The laptop screen turns off after a few minutes.' };
+test('damage photos are optional and accept only trusted image URLs when supplied', () => {
+  assert.equal(Object.hasOwn(validateBooking(fields), 'problemImage'), false);
+  assert.equal(Object.hasOwn(validateBooking({ ...fields, problemImage: '' }), 'problemImage'), false);
+  assert.equal(validateBooking({ ...fields, problemImage: 'https://i.ibb.co/test/damage.png' }).problemImage, 'https://i.ibb.co/test/damage.png');
+  for (const problemImage of [null, [], {}, 'not a URL', 'http://i.ibb.co/test/a.png', 'https://example.com/a.png', 'https://i.ibb.co.evil.example/a.png', 'https://user:secret@i.ibb.co/a.png', 'https://i.ibb.co:8443/a.png', 'https://i.ibb.co/' + 'a'.repeat(2048)]) assert.throws(() => validateBooking({ ...fields, problemImage }), { status: 400 });
+});
 test('booking dates use Bangladesh calendar boundaries and reject invalid inputs', () => {
   const now = new Date('2026-11-19T20:00:00Z');
   assert.equal(dhakaDate(now), '2026-11-20');
@@ -35,6 +41,11 @@ test('booking creation enforces roles, service visibility, trusted snapshots, an
     assert.equal((await post({ ...fields, serviceId: fields.serviceId.toUpperCase(), customerEmail: 'attacker@example.com', basePrice: 1, paymentStatus: 'paid', status: 'completed' })).status, 201);
     assert.equal(query.approvalStatus, 'approved'); assert.equal(query.isAvailable, true);
     assert.equal(stored.customerEmail, user.email); assert.equal(stored.basePrice, 40); assert.equal(stored.finalAmount, 40); assert.equal(stored.status, 'requested'); assert.equal(stored.paymentStatus, 'unpaid'); assert.equal(stored.serviceId, fields.serviceId);
+    assert.equal(Object.hasOwn(stored, 'problemImage'), false);
+    const withPhoto = await post({ ...fields, problemImage: 'https://i.ibb.co/test/damage.png' });
+    assert.equal(withPhoto.status, 201); assert.equal((await withPhoto.json()).problemImage, 'https://i.ibb.co/test/damage.png');
+    assert.equal(stored.problemImage, 'https://i.ibb.co/test/damage.png');
+    assert.equal((await post({ ...fields, problemImage: 'https://evil.example/image.png' })).status, 400);
     duplicate = true; assert.equal((await post(fields)).status, 409); duplicate = false;
     service.technicianEmail = user.email; assert.equal((await post(fields)).status, 403);
     service = null; assert.equal((await post(fields)).status, 404);

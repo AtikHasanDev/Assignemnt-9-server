@@ -41,6 +41,7 @@ test('booking monitor restricts access and combines validated filters with stabl
     assert.equal(data.total, 13); assert.equal(data.totalPages, 2); assert.equal(data.page, 2); assert.equal(data.items.length, 1);
     assert.deepEqual(seen.filter, { status: 'completed', paymentStatus: 'unpaid' });
     assert.equal(seen.options.projection.statusHistory, 1); assert.equal(seen.options.projection.customerPhone, 1);
+    assert.equal(seen.options.projection.problemImage, 1);
     const all = await (await request('?status=all&paymentStatus=all')).json(); assert.equal(all.total, 15);
     const empty = await (await request('?status=cancelled')).json(); assert.equal(empty.totalPages, 0); assert.deepEqual(empty.items, []);
     for (const query of ['?status=unknown', '?status=completed&status=requested', '?status[$ne]=completed', '?paymentStatus=refunded', '?paymentStatus=paid&paymentStatus=unpaid', '?page=0', '?limit=101', '?page=abc']) assert.equal((await request(query)).status, 400, query);

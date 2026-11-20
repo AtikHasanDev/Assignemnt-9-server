@@ -32,7 +32,7 @@ export function adminRoutes(db, authorization) {
       const [items, total] = await Promise.all([
         bookings.find(filter, { projection: {
           serviceTitle: 1, category: 1, customerName: 1, customerEmail: 1, customerPhone: 1,
-          technicianName: 1, technicianEmail: 1, address: 1, preferredDate: 1, problemDescription: 1,
+          technicianName: 1, technicianEmail: 1, address: 1, preferredDate: 1, problemDescription: 1, problemImage: 1,
           basePrice: 1, finalAmount: 1, status: 1, paymentStatus: 1, statusHistory: 1, createdAt: 1, updatedAt: 1,
         } }).sort({ createdAt: -1, _id: -1 }).skip(skip).limit(limit).toArray(),
         bookings.countDocuments(filter),

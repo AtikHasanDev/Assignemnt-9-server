@@ -10,6 +10,13 @@ export function validateBooking(body, now = new Date()) {
   if (!body || typeof body !== 'object' || Array.isArray(body)) throw invalid('Repair request details are required.');
   if (typeof body.serviceId !== 'string' || !/^[a-f\d]{24}$/i.test(body.serviceId)) throw invalid('Choose a valid service.');
   const fields = {};
+  if (body.problemImage !== undefined && body.problemImage !== '') {
+    if (typeof body.problemImage !== 'string' || body.problemImage.length > 2048) throw invalid('Upload a valid damage photo or submit without one.');
+    let image;
+    try { image = new URL(body.problemImage); } catch { throw invalid('Upload a valid damage photo or submit without one.'); }
+    if (image.protocol !== 'https:' || image.hostname !== 'i.ibb.co' || image.username || image.password || image.port) throw invalid('Use a damage photo uploaded through ImgBB.');
+    fields.problemImage = image.href;
+  }
   for (const [key, min, max] of [['customerPhone', 7, 24], ['address', 10, 500], ['problemDescription', 20, 3000]]) {
     if (typeof body[key] !== 'string' || body[key].trim().length < min || body[key].trim().length > max) throw invalid(key + ' must contain ' + min + '–' + max + ' characters.');
     fields[key] = body[key].trim();

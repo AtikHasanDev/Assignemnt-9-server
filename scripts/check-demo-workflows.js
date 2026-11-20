@@ -61,9 +61,13 @@ try {
   console.log('PASS: service creation, admin approval and availability control public visibility.');
   const payload = { serviceId, customerPhone: '+8801000000000', address: 'Disposable test address, Mirpur, Dhaka', problemDescription: 'Disposable repair request used for workflow verification only.', preferredDate: dhakaDate(new Date(Date.now() + 86400000)) };
   const first = await request(customer, '/api/bookings', 'POST', payload, 201); bookingIds.push(new ObjectId(first._id));
+  assert.equal(Object.hasOwn(first, 'problemImage'), false);
   await request(customer, '/api/bookings', 'POST', payload, 409);
   await request(customer, '/api/bookings/' + first._id + '/cancel', 'PATCH');
-  const second = await request(customer, '/api/bookings', 'POST', payload, 201); bookingIds.push(new ObjectId(second._id));
+  const second = await request(customer, '/api/bookings', 'POST', { ...payload, problemImage: seeded.image }, 201); bookingIds.push(new ObjectId(second._id));
+  assert.equal(second.problemImage, seeded.image);
+  const technicianQueue = await request(technician, '/api/bookings/technician');
+  assert.equal(technicianQueue.items.find(item => item._id === second._id).problemImage, seeded.image);
   await request(otherTechnician, '/api/bookings/' + second._id + '/status', 'PATCH', { status: 'accepted' }, 404);
   await request(customer, '/api/bookings/' + second._id + '/status', 'PATCH', { status: 'accepted' }, 403);
   await request(technician, '/api/bookings/' + second._id + '/status', 'PATCH', { status: 'accepted' });
@@ -72,7 +76,7 @@ try {
   await request(technician, '/api/bookings/' + second._id + '/status', 'PATCH', { status: 'completed', finalAmount: 1 });
   const saved = await db.collection('bookings').findOne({ _id: bookingIds[1] });
   assert.equal(saved.status, 'completed'); assert.equal(saved.statusHistory.length, 4);
-  console.log('PASS: duplicate protection, cancellation, ownership and accepted → in-progress → completed transitions.');
+  console.log('PASS: requests with/without damage photos, technician photo visibility, duplicate protection, cancellation, ownership and repair transitions.');
   if (env.stripeSecret.startsWith('sk_test_')) {
     const checkout = await request(customer, '/api/payments/checkout', 'POST', { bookingId: second._id, amount: 0.01 });
     assert.equal(new URL(checkout.url).origin, 'https://checkout.stripe.com');
