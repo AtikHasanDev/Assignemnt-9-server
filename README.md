@@ -2,13 +2,27 @@
 
 Express and MongoDB API for FixMate, a pay-after-completion repair service platform.
 
+## Live deployment
+
+Client: https://fixmate-atikhasan.vercel.app
+
+API readiness: https://fixmate-api-atikhasan.onrender.com/api/ready
+
+Hosted on Render Free in Singapore. The deployed signing secret is configured separately from the local Stripe listener secret. Demo login details are intentionally published in the client README for examiner testing, with owner approval.
+
+Production role sign-ins, private-page reloads, ImgBB uploads and disposable multi-role workflows passed. The deployed signed Stripe replay returned HTTP 200; provider resend and database checks confirmed one payment and one Paid history entry. All 32 server tests pass.
+
 ## Current progress
 
 The demo catalog now contains 21 approved services, three in each of the seven categories. Rerunning the seed adds missing records and preserves existing service edits, connected bookings, and verified payments. The earlier milestone notes below describe the initial twelve-service seed.
 
 Optional repair-photo enhancement: POST /api/bookings accepts problemImage when supplied, validates HTTPS ImgBB URLs, and stores it on the booking. Omitted/empty images are accepted; non-image-provider URLs, credentials, custom ports, malformed types, and oversized URLs are rejected. Private owner-scoped booking APIs return the attachment, and the administrator projection includes it. All 32 server tests pass; demo:check also verified successful requests both without and with a photo and attachment visibility in the technician queue.
 
-Part 20 disables adaptive pricing on new Checkout sessions so the app consistently displays USD. A complete $40 sandbox browser payment, real webhook HTTP 200 delivery, customer/admin history display, and idempotent replay were verified; no real money moved. All 31 server tests pass. Vercel/Render hosting settings are prepared but not deployed yet; see ../docs/DEPLOYMENT.md.
+## Historical implementation milestones
+
+The notes below record checks at each implementation stage. The live deployment and current progress sections above supersede their earlier pending statuses and test counts.
+
+Part 20 disables adaptive pricing on new Checkout sessions so the app consistently displays USD. A complete $40 sandbox browser payment, real webhook HTTP 200 delivery, customer/admin history display, and idempotent replay were verified; no real money moved. All 31 server tests passed at that stage.
 
 Part 19 adds a rerunnable seed: npm run seed:demo previews the plan; npm run seed:demo -- --apply creates four reserved demo accounts through BetterAuth, twelve approved services, and six unpaid bookings. It preserves existing edits and refuses to overwrite non-seed identities. Device illustrations are generated locally and uploaded to ImgBB; login credentials stay in ignored .env.demo. npm run demo:check passed real multi-role sign-in, moderation, visibility, booking ownership/transition/duplicate/cancellation and unpaid Stripe checks, then cleaned up temporary records. See ../docs/DEMO_ACCOUNTS.md.
 
@@ -24,7 +38,9 @@ Part 12 hardens the authenticated ImgBB upload integration: multipart requests h
 
 Parts 1–3 implement HTTP configuration, CORS, MongoDB and indexes, readiness checks, and BetterAuth email/password endpoints mounted before JSON parsing. Registration accepts customer or technician roles; invalid roles become customer. Role is server-owned and cannot be changed through profile updates. Passwords require six characters plus uppercase and lowercase letters. Service/booking endpoints, JWT authorization, uploads, payments, and seed records follow in later parts.
 
-Authentication requires BETTER_AUTH_URL (the exact API origin) and BETTER_AUTH_SECRET (a random secret of at least 32 characters) in the ignored .env. Keep this secret stable across restarts. The client sends credentialed requests to NEXT_PUBLIC_API_URL. Use localhost for both client and server during development; mixing localhost and 127.0.0.1 can prevent cookies from working. Production origins must be added to CLIENT_ORIGINS and deployment must support credential cookies between client and API.
+## Authentication configuration
+
+Authentication requires BETTER_AUTH_URL (the public authentication origin) and BETTER_AUTH_SECRET (a random secret of at least 32 characters) in the ignored .env. Keep this secret stable across restarts. Locally BETTER_AUTH_URL uses the API origin; production uses https://fixmate-atikhasan.vercel.app because Next.js proxies /api/* to Render and keeps cookies on the frontend domain. The client sends credentialed requests to NEXT_PUBLIC_API_URL. Use localhost for both client and server during development; mixing localhost and 127.0.0.1 can prevent cookies from working. Production origins must be added to CLIENT_ORIGINS.
 
 Optional DNS_SERVERS is a comma-separated list of DNS resolver IPs. It affects only this Node process and can resolve local SRV lookup failures; leave it blank when the system resolver works. Local DNS overrides and actual secrets belong in .env only.
 
