@@ -1,6 +1,7 @@
 import { Router } from 'express';
+import { paymentHistory } from './history.js';
 
-export function paymentRoutes(payments, authorization) {
+export function paymentRoutes(payments, authorization, db) {
   const router = Router();
   router.use(authorization.verifyToken, authorization.verifyCustomer);
   router.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
@@ -13,6 +14,7 @@ export function paymentRoutes(payments, authorization) {
   };
   router.post('/checkout', run(req => payments.checkout(req.body?.bookingId, req.user.email)));
   router.post('/verify', run(req => payments.fulfill(req.body?.sessionId, req.user.email)));
+  router.get('/my', run(req => paymentHistory(db, req.query, req.user.email)));
   return router;
 }
 

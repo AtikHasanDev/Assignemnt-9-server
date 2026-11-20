@@ -30,7 +30,7 @@ export function createApp({ checkDatabase = async () => false, auth, authorizati
   if (paymentService) app.post('/api/payments/webhook', express.raw({ type: 'application/json', limit: '1mb' }), paymentWebhook(paymentService));
   app.use(express.json({ limit: '7mb' }));
   if (db && authorization) {
-    app.use('/api/payments', paymentRoutes(paymentService, authorization));
+    app.use('/api/payments', paymentRoutes(paymentService, authorization, db));
     app.use('/api/users', userRoutes(db, authorization));
     app.use('/api/dashboard', dashboardRoutes(db, authorization));
     app.use('/api/bookings', bookingRoutes(db, authorization));

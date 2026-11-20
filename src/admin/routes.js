@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { ObjectId } from 'mongodb';
+import { paymentHistory } from '../payments/history.js';
 const badRequest = message => Object.assign(new Error(message), { status: 400 });
 function id(value) { if (!/^[a-f\d]{24}$/i.test(value)) throw badRequest('Invalid record id.'); return new ObjectId(value); }
 function pagination(query) {
@@ -12,6 +13,10 @@ export function adminRoutes(db, authorization) {
   const router = Router();
   router.use(authorization.verifyToken, authorization.verifyAdmin);
   router.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
+  router.get('/transactions', async (req, res, next) => {
+    try { res.json(await paymentHistory(db, req.query)); }
+    catch (error) { next(error); }
+  });
   router.get('/bookings', async (req, res, next) => {
     try {
       if (Object.keys(req.query).some(key => !['status', 'paymentStatus', 'page', 'limit'].includes(key))) throw badRequest('Invalid booking filter parameter.');
