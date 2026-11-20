@@ -1,120 +1,116 @@
 # FixMate API
 
-Express and MongoDB API for FixMate, a pay-after-completion repair service platform.
+Backend for FixMate, a device and home appliance repair platform. Customers book repairs, technicians manage the work, and customers pay after completion.
 
-## Live deployment
+## Links
 
-Client: https://fixmate-atikhasan.vercel.app
+- [Live website](https://fixmate-atikhasan.vercel.app)
+- [Live API readiness](https://fixmate-api-atikhasan.onrender.com/api/ready)
+- [Client repository](https://github.com/AtikHasanDev/Assignment-9)
+- [Demo accounts and passwords](https://github.com/AtikHasanDev/Assignment-9#demo-accounts)
 
-API readiness: https://fixmate-api-atikhasan.onrender.com/api/ready
+The API base URL is `https://fixmate-api-atikhasan.onrender.com`. The bare `/` route returns `404`; use `/api/ready` to check database connectivity. Render Free may take 50 seconds or more to wake after inactivity.
 
-Hosted on Render Free in Singapore. The deployed signing secret is configured separately from the local Stripe listener secret. Demo login details are intentionally published in the client README for examiner testing, with owner approval.
+## Features
 
-Production role sign-ins, private-page reloads, ImgBB uploads and disposable multi-role workflows passed. The deployed signed Stripe replay returned HTTP 200; provider resend and database checks confirmed one payment and one Paid history entry. All 32 server tests pass.
+- BetterAuth email/password sessions and short-lived JWT authorization.
+- Customer, technician, and administrator roles with ownership checks.
+- Service management, admin approval, availability, search, filters, sorting, and pagination.
+- Bookings with optional ImgBB damage photos and duplicate active-request protection.
+- Technician job transitions, final pricing, and timestamped repair history.
+- Stripe test Checkout after completion, signed webhooks, and duplicate-payment protection.
+- Customer payment history, admin transactions, and role-specific dashboard statistics.
+- Profile updates and authenticated ImgBB uploads for PNG, JPEG, and WebP images up to 5 MB.
 
-## Current progress
+## Technology
 
-The demo catalog now contains 21 approved services, three in each of the seven categories. Rerunning the seed adds missing records and preserves existing service edits, connected bookings, and verified payments. The earlier milestone notes below describe the initial twelve-service seed.
+Node.js, Express 5, MongoDB, BetterAuth, JOSE (JWT), Stripe, ImgBB, Helmet, and CORS.
 
-Optional repair-photo enhancement: POST /api/bookings accepts problemImage when supplied, validates HTTPS ImgBB URLs, and stores it on the booking. Omitted/empty images are accepted; non-image-provider URLs, credentials, custom ports, malformed types, and oversized URLs are rejected. Private owner-scoped booking APIs return the attachment, and the administrator projection includes it. All 32 server tests pass; demo:check also verified successful requests both without and with a photo and attachment visibility in the technician queue.
+## Run locally
 
-## Historical implementation milestones
-
-The notes below record checks at each implementation stage. The live deployment and current progress sections above supersede their earlier pending statuses and test counts.
-
-Part 20 disables adaptive pricing on new Checkout sessions so the app consistently displays USD. A complete $40 sandbox browser payment, real webhook HTTP 200 delivery, customer/admin history display, and idempotent replay were verified; no real money moved. All 31 server tests passed at that stage.
-
-Part 19 adds a rerunnable seed: npm run seed:demo previews the plan; npm run seed:demo -- --apply creates four reserved demo accounts through BetterAuth, twelve approved services, and six unpaid bookings. It preserves existing edits and refuses to overwrite non-seed identities. Device illustrations are generated locally and uploaded to ImgBB; login credentials stay in ignored .env.demo. npm run demo:check passed real multi-role sign-in, moderation, visibility, booking ownership/transition/duplicate/cancellation and unpaid Stripe checks, then cleaned up temporary records. See ../docs/DEMO_ACCOUNTS.md.
-
-Part 18 adds customer-only GET /api/payments/my and administrator-only GET /api/admin/transactions. Both read the verified payments collection with stable paidAt/_id ordering, validated page/limit parameters, total counts, and explicit history-field projections. Customer scope comes from the current authenticated account; query parameters cannot override identity. Responses disable caching. All 31 server tests pass, including payment-history authorization, scope, pagination, malformed-query, projection, and empty-result checks.
-
-Stripe setup is now configured locally: the owner saved the existing sandbox test secret, the official CLI listener is running, its signing secret is saved in the ignored .env, and the API was restarted. npm run stripe:listen restarts the locally installed listener; npm run stripe:check creates/verifies/expires a test checkout without submitting payment. Checkout now uses Dashboard-managed payment methods. A real $1 test checkout configuration check and all 30 server tests pass. Full browser payment completion is still pending.
-
-Part 17 adds POST /api/payments/checkout and /api/payments/verify for authenticated customers, plus POST /api/payments/webhook with raw-body signature verification. Checkout uses trusted completed/unpaid booking data and persistent idempotency keys. Test sessions only are accepted. Shared fulfillment verifies booking/customer/session/amount/currency and atomically writes payment history plus booking Paid status in a MongoDB transaction. Unique indexes and transaction retries protect repeated/concurrent callbacks. USD amounts must be at least $0.50 for Stripe. Configure STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET, and PAYMENT_CLIENT_ORIGIN; follow ../docs/STRIPE_LOCAL_SETUP.md. Stripe CLI is not installed/configured by this change. All 30 tests pass, and scripts/check-payment-transactions.js verified real MongoDB concurrency with simulated Stripe. Actual provider checkout remains unverified pending credentials.
-
-Part 16 adds GET /api/admin/bookings for administrator-only booking monitoring. It accepts status, paymentStatus, page, and limit, validates filters, returns a stable newest-first paginated list with an explicit field projection, and disables response caching. Other roles cannot access it. Tests cover access control, combined filters, pagination, empty results, and malformed parameters.
-
-Part 12 hardens the authenticated ImgBB upload integration: multipart requests have a 20-second timeout; successful URLs must use HTTPS on i.ibb.co without credentials or a custom port. Missing configuration returns 503; network failures, provider failures, invalid JSON, and unsafe response URLs return a safe 502 message. Provider behavior is covered by automated tests. Configure IMGBB_API_KEY in the ignored .env and restart the API before testing real uploads. No live upload has been verified yet.
-
-Parts 1–3 implement HTTP configuration, CORS, MongoDB and indexes, readiness checks, and BetterAuth email/password endpoints mounted before JSON parsing. Registration accepts customer or technician roles; invalid roles become customer. Role is server-owned and cannot be changed through profile updates. Passwords require six characters plus uppercase and lowercase letters. Service/booking endpoints, JWT authorization, uploads, payments, and seed records follow in later parts.
-
-## Authentication configuration
-
-Authentication requires BETTER_AUTH_URL (the public authentication origin) and BETTER_AUTH_SECRET (a random secret of at least 32 characters) in the ignored .env. Keep this secret stable across restarts. Locally BETTER_AUTH_URL uses the API origin; production uses https://fixmate-atikhasan.vercel.app because Next.js proxies /api/* to Render and keeps cookies on the frontend domain. The client sends credentialed requests to NEXT_PUBLIC_API_URL. Use localhost for both client and server during development; mixing localhost and 127.0.0.1 can prevent cookies from working. Production origins must be added to CLIENT_ORIGINS.
-
-Optional DNS_SERVERS is a comma-separated list of DNS resolver IPs. It affects only this Node process and can resolve local SRV lookup failures; leave it blank when the system resolver works. Local DNS overrides and actual secrets belong in .env only.
-
-## Local setup
-
-Requires Node.js 22+ and MongoDB 6.0+ (Atlas supported).
+Requires Node.js 22+ and a MongoDB deployment. MongoDB Atlas is supported; payment fulfillment requires transaction support, such as a replica set.
 
 ```powershell
-npm install
-# Only if .env does not already exist:
+npm ci
 Copy-Item .env.example .env
-# Edit .env locally and add your Atlas URI. Do not commit it.
+```
+
+Copy the template only when `.env` does not already exist. Fill in your configuration, then run:
+
+```powershell
 npm run db:check
 npm run dev
 ```
 
-Configuration:
-- PORT: HTTP port, default 5000.
-- CLIENT_ORIGINS: comma-separated exact origins, no paths or trailing slashes.
-- MONGODB_URI: required Atlas/standard MongoDB connection string. URL-encode special characters in the database password.
-- MONGODB_DB: database name, default fixmate.
-- NODE_ENV: development or production.
+The API runs at `http://localhost:5000` by default. Allow your host through Atlas Network Access and give the database user read/write access to the configured database. Startup requires a working database and successful index initialization.
 
-Use an Atlas database user with read/write access to the chosen database and allow the development/deployment host through Atlas Network Access. Do not paste connection strings into chat, logs, or Git. Startup fails without a working database and successful index initialization; it never silently falls back to sample data.
+## Environment variables
 
-## Health and readiness
+Keep actual values in the ignored `.env` file or the hosting provider's environment settings.
 
-- GET /api/health: HTTP process liveness only, returns 200 while the server is running.
-- GET /api/ready: performs a database ping; returns 200 when connected and 503 when unavailable. It does not expose hostnames or credentials.
+| Variable | Purpose |
+| --- | --- |
+| `NODE_ENV` | `development` locally; `production` on Render. |
+| `PORT` | HTTP port; defaults to `5000`. |
+| `CLIENT_ORIGINS` | Comma-separated allowed frontend origins, without paths or trailing slashes. |
+| `MONGODB_URI` | MongoDB connection string. |
+| `MONGODB_DB` | Database name; defaults to `fixmate`. |
+| `BETTER_AUTH_URL` | Public authentication origin; local default is `http://localhost:5000`. |
+| `BETTER_AUTH_SECRET` | Stable random authentication secret, at least 32 characters. |
+| `JWT_SECRET` | Independent random JWT signing secret, at least 32 characters. |
+| `IMGBB_API_KEY` | Server-side image upload key. |
+| `STRIPE_SECRET_KEY` | Stripe test secret key (`sk_test_...`). |
+| `STRIPE_WEBHOOK_SECRET` | Signing secret for the local listener or deployed endpoint. |
+| `PAYMENT_CLIENT_ORIGIN` | Frontend origin used for Checkout return URLs. |
+| `DNS_SERVERS` | Optional comma-separated DNS resolver IPs for local SRV resolution issues. |
 
-## Data model and indexes
+Use `localhost` consistently for the local client and API. In production, the Next.js client proxies `/api/*` to Render, so `BETTER_AUTH_URL`, `CLIENT_ORIGINS`, and `PAYMENT_CLIENT_ORIGIN` use `https://fixmate-atikhasan.vercel.app`. This keeps authentication cookies on the frontend domain.
 
-There are four application collections: user (BetterAuth's default identity collection), services, bookings, and payments. BetterAuth will create its own session/account/verification collections later. Do not create a parallel users collection.
+## API overview
 
-- user: unique email and role/creation-time index.
-- services: public availability/approval/newest, category/mode/price, and technician indexes.
-- bookings: a partial unique customerEmail + serviceId index applies only to requested, accepted, and in-progress records. Concurrent duplicate active requests are rejected by MongoDB. Customer history, technician queues, and admin status queries are indexed.
-- payments: unique bookingId, stripeSessionId, and transactionId; customer, technician, and chronological transaction indexes.
+Paths are relative to the API base URL. Private business routes require a Bearer JWT; the server checks the current database role and record ownership.
 
-Index initialization is repeatable and does not remove existing data or silently drop indexes. Existing duplicates or incompatible index definitions stop startup and must be investigated. Later API steps must translate duplicate-key errors into user-friendly conflict messages and normalize account emails consistently.
+| Area | Routes |
+| --- | --- |
+| Health | `GET /api/health` (process liveness), `GET /api/ready` (database readiness). |
+| Authentication | `/api/auth/*` for BetterAuth; `POST /api/token` exchanges a valid session from a trusted origin for a JWT; `GET /api/me` returns the current account. |
+| Public services | `GET /api/services`, `GET /api/services/:id`. |
+| Technician services | `POST /api/services`, `GET /api/services/my`, `PATCH /api/services/:id`, `PATCH /api/services/:id/availability`, `DELETE /api/services/:id`. |
+| Bookings | `POST /api/bookings`, `GET /api/bookings/my`, `GET /api/bookings/technician`, `PATCH /api/bookings/:id/cancel`, `PATCH /api/bookings/:id/status`. |
+| Administration | User lists/role changes, service moderation, and booking monitoring under `/api/admin`. |
+| Payments | `POST /api/payments/checkout`, `POST /api/payments/verify`, `POST /api/payments/webhook`, `GET /api/payments/my`, `GET /api/admin/transactions`. |
+| Profiles and uploads | `PATCH /api/users/profile`, `POST /api/uploads`. |
+| Dashboards | `GET /api/dashboard/customer`, `GET /api/dashboard/technician`, `GET /api/dashboard/admin`. |
 
-## Validation
+Only approved, available services are publicly visible. New or fully edited services require admin approval. Customers can cancel requested bookings; technicians progress jobs through acceptance, repair, and completion. Payment opens only after completion and final pricing.
 
-Part 11 adds PATCH /api/users/profile for all JWT-authenticated roles. Allowed fields are name (2–100 characters), phone (optional, 7–15 digits with formatting), area (up to 160 characters), bio (up to 2000), and an HTTPS ImgBB image URL (or an empty string to clear the photo). Updates target only the authenticated account. Email, role, id, and _id changes are rejected. The response includes safe updated profile fields with Cache-Control: no-store.
+MongoDB indexes enforce unique account emails, one active request per customer/service pair, and unique payment identifiers. Payment fulfillment uses a transaction so repeated callbacks cannot create duplicate payments.
 
-The BetterAuth /update-user hook applies the same validation, so direct auth endpoint calls cannot bypass these field rules. No cookie-cache layer is enabled; the upcoming client editor must explicitly refetch the BetterAuth session after saving so the navbar and dashboard show updated name/photo immediately. Tests verify all three roles, field validation, image origins, identity restrictions, and missing-account responses. The profile file-upload UI and live ImgBB verification remain scheduled.
+## Stripe test payments
 
-Part 10 adds GET /api/dashboard/customer, /api/dashboard/technician, and /api/dashboard/admin. Each endpoint requires a JWT and its matching role. Customer totals/active/completed counts aggregate only bookings with the authenticated customerEmail. Technician totals/approved service counts and pending request counts scope to technicianEmail. Admin totals cover users, technicians, and pending services. Each response also includes a status breakdown for charts; all totals come from database queries and empty datasets produce zeros. Responses use Cache-Control: no-store. Query-string identities cannot alter the scope.
+Use test-mode keys only. The local listener script uses the official Stripe CLI. On Windows, install its cached package if needed:
 
-Part 9 adds PATCH /api/bookings/:id/cancel for the owning customer, GET /api/bookings/technician for the logged-in technician (optional status filter), and PATCH /api/bookings/:id/status for the owning technician. The server permits requested→accepted/rejected, accepted→in-progress, and in-progress→completed. Completion requires a positive finalAmount in USD with up to two decimal places. A customer may cancel only requested jobs. Terminal jobs cannot be changed, and these APIs cannot mark a payment paid.
+```powershell
+npm install --prefix node_modules/.cache/stripe-cli --no-package-lock --no-save @stripe/cli
+npm run stripe:listen
+```
 
-Mutations include owner identity and expected current status in the MongoDB update filter. Competing updates return 409 rather than overwrite another transition. Each successful transition appends statusHistory with a server timestamp and updates updatedAt. Tests cover all status pairs, ownership, wrong roles, amount rules, history, queue scoping, and a simulated acceptance/cancellation race against an in-memory collection. Live Atlas concurrency testing is still part of final integration verification.
+The listener saves its signing secret to the ignored `.env`; restart the API to load it. On other platforms, set `STRIPE_CLI_PATH` to your official CLI executable. The script forwards events to `http://localhost:5000/api/payments/webhook`.
 
-Part 8 adds customer/JWT-protected POST /api/bookings and GET /api/bookings/my. Request input is serviceId, customerPhone, address, preferredDate (YYYY-MM-DD), and problemDescription (20–3000 characters). Date-only values are checked against the current day in Asia/Dhaka and stored as UTC midnight representing the requested calendar date. Phone numbers accept 7–15 digits with common formatting characters; addresses require 10–500 characters.
+The deployed endpoint is `https://fixmate-api-atikhasan.onrender.com/api/payments/webhook`. It handles `checkout.session.completed` and `checkout.session.async_payment_succeeded`. Configure its own signing secret in Render; it differs from the local listener secret. Checkout amounts use USD.
 
-The server reloads the approved/available service, rejects requests for an owned service, copies immutable service/technician/customer snapshots, and sets requested/unpaid and the service's base price itself. The partial unique index rejects simultaneous duplicate active requests with 409. User-supplied identity, status, price, and payment fields are ignored. History begins at requested. GET /my always scopes to the authenticated customer, regardless of email query parameters. Unit tests exercise duplicate-key translation; the index itself was created during the earlier Atlas verification.
+## Demo data
 
-Part 7 adds JWT/admin-protected moderation endpoints:
-- GET /api/admin/users: paginated public account summaries (no credentials or auth tokens).
-- PATCH /api/admin/users/:id/role: customer, technician, or admin; the acting admin cannot change their own role.
-- GET /api/admin/services: pending by default; approvalStatus accepts all, pending, approved, or rejected.
-- PATCH /api/admin/services/:id/approval: approved or rejected only, with moderator identity and timestamp.
+The seed provides four demo accounts, 21 approved services across seven categories, and six connected bookings. Preview before applying:
 
-Admin lists accept page and limit (up to 100 per page). Updates allow only intended fields and report missing records as 404. Role enforcement reads MongoDB on each JWT request, so newly changed roles apply immediately to business APIs. Admin dashboard screens are scheduled in later client milestones.
+```powershell
+npm run seed:demo
+npm run seed:demo -- --apply
+```
 
-Part 6 adds technician-only POST /api/services, GET /api/services/my, PATCH /api/services/:id, PATCH /api/services/:id/availability, and DELETE /api/services/:id. Creation always sets pending approval and copies the authenticated technician identity. Full validated edits reset approval to pending; availability-only updates preserve approval. Updates/deletion match both id and authenticated owner email. Booking snapshots will remain independent of deleted services.
+The seed preserves existing seeded edits and payments. Generated login details are stored in the ignored `.env.demo`; retain that file for subsequent seed runs and workflow checks. Public assignment login details are listed in the [client README](https://github.com/AtikHasanDev/Assignment-9#demo-accounts).
 
-POST /api/uploads accepts an authenticated user's JSON body with image as plain base64. Only PNG, JPEG, or WebP signatures up to 5 MB are accepted. It uploads to ImgBB server-side and returns only the hosted URL. Set IMGBB_API_KEY in the ignored .env before live use; without it, uploads return 503. This integration has validation tests but has not been verified against a live ImgBB key. The service form with file selection is scheduled in a later client milestone.
-
-Part 5 exposes public GET /api/services and GET /api/services/:id. Listings accept search, category, serviceMode, sort (newest, price-asc, price-desc), page, and limit (1–48). Search is a literal, case-insensitive MongoDB regex on title/category. Filtering, sorting, counts, skip, and limit happen in MongoDB. Only approved and available services are returned; unavailable/missing details return 404. Technician details expose only name, image, area, and bio. No data is seeded by these routes.
-
-Part 4 adds POST /api/token (valid BetterAuth session plus trusted Origin required) and GET /api/me (Bearer JWT required). JWTs expire after 15 minutes and validate HS256, issuer, audience, subject, and account existence. Set an independent JWT_SECRET of at least 32 random characters in .env; a local value has been generated during development. Never commit actual secrets.
-
-createAuthorization provides verifyToken, verifyCustomer, verifyTechnician, and verifyAdmin. Private business routes added in later parts must apply verifyToken before the appropriate role middleware and scope database queries to req.user. Roles are loaded from MongoDB on each request. The JWT suite verifies missing/invalid/expired/wrong-key tokens, role changes, and deleted users.
+## Checks
 
 ```powershell
 npm run check
@@ -122,12 +118,23 @@ npm test
 npm run db:check
 ```
 
-The unit tests verify readiness/liveness behavior and error redaction without an Atlas connection. db:check requires actual configuration, initializes the real application indexes, and lists their names. Unit tests alone do not verify MongoDB's unique constraints.
+`check` validates JavaScript syntax, `test` runs the automated test suite, and `db:check` verifies the configured database and indexes.
 
-MongoDB design follows the [Node driver connection guidance](https://www.mongodb.com/docs/drivers/node/current/connect/mongoclient/) and [partial unique index documentation](https://www.mongodb.com/docs/manual/core/index-partial/).
+Optional integration checks:
 
-## Packages and deployment
+```powershell
+npm run stripe:check
+npm run demo:check
+```
 
-Packages: Express, cors, dotenv, helmet, mongodb.
+These require configured external services. `stripe:check` creates, verifies, and expires an unpaid test Checkout session. `demo:check` uses seeded accounts and `.env.demo` to exercise role-based workflows, creates temporary records, and cleans them up.
 
-Not deployed. Admin and test accounts have not been created. BetterAuth and Stripe raw-body handlers must be mounted before JSON parsing when implemented. This directory is a separate Git repository and is committed independently from the parent client. Actual .env files remain ignored.
+## Render deployment
+
+- Branch: `main`.
+- Build command: `npm ci`.
+- Start command: `npm start`.
+- Health check: `/api/ready`.
+- Set production environment variables in Render, then deploy the intended commit.
+
+This server is a separate Git repository from the client. Keep private database, authentication, image upload, and Stripe secrets out of Git and frontend environment variables.
