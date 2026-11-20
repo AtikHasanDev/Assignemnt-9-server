@@ -25,10 +25,15 @@ const offerings = [
   ['Home electrical safety check', 'Electrical', 20], ['Smartphone battery replacement', 'Smartphone', 28],
   ['Laptop performance tune-up', 'Laptop & PC', 32], ['AC cooling diagnosis', 'AC', 42],
   ['Refrigerator door seal replacement', 'Refrigerator', 26], ['Washing machine drain repair', 'Washing Machine', 34],
+  ['Smartphone charging port repair', 'Smartphone', 24], ['Laptop fan and thermal servicing', 'Laptop & PC', 48],
+  ['AC filter and airflow servicing', 'AC', 36], ['Refrigerator thermostat inspection', 'Refrigerator', 33],
+  ['TV sound and speaker repair', 'TV', 29], ['TV power supply inspection', 'TV', 31],
+  ['Washing machine leak diagnosis', 'Washing Machine', 39], ['Switch and socket replacement', 'Electrical', 22],
+  ['Ceiling fan wiring and installation', 'Electrical', 27],
 ];
 const stableId = key => new ObjectId(createHash('sha256').update(tag + ':' + key).digest('hex').slice(0, 24));
 if (!process.argv.includes('--apply')) {
-  console.log('Preview: add 4 demo accounts, 12 approved services with uploaded device illustrations, and 6 connected unpaid bookings. Existing seeded edits are preserved. Run npm run seed:demo -- --apply to write.');
+  console.log(`Preview: ensure 4 demo accounts, ${offerings.length} approved services with uploaded device illustrations, and 6 connected bookings. Existing seeded edits and payments are preserved. Run npm run seed:demo -- --apply to write.`);
 } else {
   if (env.isProduction && !process.argv.includes('--allow-production')) throw new Error('Production seeding requires the explicit --allow-production flag.');
   let db;
@@ -39,7 +44,7 @@ if (!process.argv.includes('--apply')) {
       const existing = await db.collection('user').findOne({ email: account.email });
       if (existing && existing.demoSeed !== tag) throw new Error('A reserved demo email belongs to a non-seed user; no account will be overwritten.');
     }
-    for (const [kind, count] of [['service', 12], ['booking', 6]]) for (let index = 0; index < count; index++) {
+    for (const [kind, count] of [['service', offerings.length], ['booking', 6]]) for (let index = 0; index < count; index++) {
       const existing = await db.collection(kind === 'service' ? 'services' : 'bookings').findOne({ _id: stableId(kind + index) });
       if (existing && existing.demoSeed !== tag) throw new Error('A reserved seed id is occupied; no record will be overwritten.');
     }
@@ -84,7 +89,7 @@ if (!process.argv.includes('--apply')) {
       if (['requested', 'accepted', 'in-progress'].includes(status) && await db.collection('bookings').findOne({ customerEmail: booking.customerEmail, serviceId: booking.serviceId, status: { $in: ['requested', 'accepted', 'in-progress'] } })) throw new Error('An existing active demo request prevents insertion; it will not be overwritten.');
       await db.collection('bookings').insertOne(booking);
     }
-    console.log('Demo seed complete: 4 accounts, 12 connected services, 6 unpaid bookings. Existing edits preserved. Login password is in the ignored server .env.demo file.');
+    console.log(`Demo seed complete: 4 accounts, ${offerings.length} connected services, 6 connected bookings. Existing edits and payments preserved. Login password is in the ignored server .env.demo file.`);
   } catch (error) {
     console.error('Demo seed failed: ' + (error.status ? 'provider/configuration issue (' + error.status + ')' : error.message)); process.exitCode = 1;
   } finally { await closeDatabase(); }

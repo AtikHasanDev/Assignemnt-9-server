@@ -43,6 +43,7 @@ export function createPaymentService(db, {
     const record = {
       bookingId: String(booking._id), stripeSessionId: checkout.id, transactionId: checkout.payment_intent,
       customerEmail: booking.customerEmail, technicianEmail: booking.technicianEmail,
+      customerName: booking.customerName, technicianName: booking.technicianName, paymentStatus: 'paid',
       serviceTitle: booking.serviceTitle, amount: checkout.amount_total / 100, currency: 'usd', paidAt: new Date(),
     };
     // Booking state and payment history commit together. Unique indexes and
@@ -94,10 +95,10 @@ export function createPaymentService(db, {
     try {
       created = await stripe.checkout.sessions.create({
         mode: 'payment', adaptive_pricing: { enabled: false }, customer_email: booking.customerEmail,
-        client_reference_id: String(booking._id), metadata: { bookingId: String(booking._id), checkoutKey: booking.checkoutKey },
+        client_reference_id: String(booking._id), metadata: { bookingId: String(booking._id), customerEmail: booking.customerEmail, checkoutKey: booking.checkoutKey },
         line_items: [{ quantity: 1, price_data: { currency: 'usd', unit_amount: amount, product_data: { name: 'Completed repair: ' + booking.serviceTitle } } }],
-        success_url: origin + '/dashboard/customer/payment/success?session_id={CHECKOUT_SESSION_ID}',
-        cancel_url: origin + '/dashboard/customer/payment/cancel',
+        success_url: origin + '/payment/success?session_id={CHECKOUT_SESSION_ID}',
+        cancel_url: origin + '/payment/cancel',
       }, { idempotencyKey: 'repair-' + booking.checkoutKey });
     } catch { throw fail('Checkout is temporarily unavailable. Please try again.', 502); }
     sessionId(created.id);

@@ -12,7 +12,7 @@ export function paymentRoutes(payments, authorization, db) {
       next(error);
     }
   };
-  router.post('/checkout', run(req => payments.checkout(req.body?.bookingId, req.user.email)));
+  router.post(['/checkout', '/create-checkout-session'], run(req => payments.checkout(req.body?.bookingId, req.user.email)));
   router.post('/verify', run(req => payments.fulfill(req.body?.sessionId, req.user.email)));
   router.get('/my', run(req => paymentHistory(db, req.query, req.user.email)));
   return router;

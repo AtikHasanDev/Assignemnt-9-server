@@ -13,7 +13,7 @@ export function adminRoutes(db, authorization) {
   const router = Router();
   router.use(authorization.verifyToken, authorization.verifyAdmin);
   router.use((_req, res, next) => { res.set('Cache-Control', 'no-store'); next(); });
-  router.get('/transactions', async (req, res, next) => {
+  router.get(['/transactions', '/payments'], async (req, res, next) => {
     try { res.json(await paymentHistory(db, req.query)); }
     catch (error) { next(error); }
   });

@@ -7,7 +7,7 @@ import { createApp } from '../src/app.js';
 import { createAuthorization } from '../src/middleware/auth.js';
 
 function fixture() {
-  const booking = { _id: new ObjectId(), customerEmail: 'payer@example.com', technicianEmail: 'tech@example.com', serviceTitle: 'Screen repair', status: 'completed', paymentStatus: 'unpaid', finalAmount: 25.75, statusHistory: [] };
+  const booking = { _id: new ObjectId(), customerName: 'Test Customer', technicianName: 'Test Technician', customerEmail: 'payer@example.com', technicianEmail: 'tech@example.com', serviceTitle: 'Screen repair', status: 'completed', paymentStatus: 'unpaid', finalAmount: 25.75, statusHistory: [] };
   const records = [];
   const sessions = new Map();
   const calls = [];
@@ -63,7 +63,8 @@ test('checkout enforces ownership, completion, unpaid state, trusted amounts, an
     assert.equal(call.params.customer_email, f.booking.customerEmail);
     assert.equal(call.params.metadata.bookingId, id); assert.equal(call.params.payment_method_types, undefined);
     assert.equal(call.options.idempotencyKey, 'repair-' + f.booking.checkoutKey);
-    assert.ok(call.params.success_url.startsWith('http://localhost:3000/dashboard/customer/payment/success'));
+    assert.ok(call.params.success_url.startsWith('http://localhost:3000/payment/success'));
+    assert.equal(call.params.metadata.customerEmail, f.booking.customerEmail);
   }
   await f.service.checkout(id, f.booking.customerEmail); assert.equal(f.sessions.size, 1);
   const expired = f.sessions.get(f.booking.stripeSessionId); expired.status = 'expired';
@@ -86,6 +87,7 @@ test('verified payments reject mismatches and commit exactly once across concurr
   const results = await Promise.all([f.service.fulfill(session.id), f.service.fulfill(session.id, f.booking.customerEmail), f.service.fulfill(session.id)]);
   assert.ok(results.every(result => result.paid)); assert.equal(f.records.length, 1); assert.equal(f.booking.paymentStatus, 'paid'); assert.equal(f.booking.statusHistory.filter(entry => entry.status === 'paid').length, 1);
   assert.equal(f.records[0].amount, 25.75); assert.equal(f.records[0].transactionId, session.payment_intent);
+  assert.equal(f.records[0].customerName, 'Test Customer'); assert.equal(f.records[0].technicianName, 'Test Technician'); assert.equal(f.records[0].paymentStatus, 'paid');
   await assert.rejects(f.service.checkout(String(f.booking._id), f.booking.customerEmail), { status: 409 });
 });
 

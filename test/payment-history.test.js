@@ -21,6 +21,7 @@ test('payment history scopes customers and restricts the administrator transacti
       }; return cursor;
     },
     countDocuments: async filter => records.filter(record => match(record, filter)).length,
+    aggregate: pipeline => ({ toArray: async () => [{ amount: records.filter(record => match(record, pipeline[0].$match)).reduce((sum, record) => sum + record.amount, 0) }] }),
   }) };
   const server = createApp({ db, authorization }).listen(0, '127.0.0.1');
   await new Promise(resolve => server.once('listening', resolve));
@@ -32,6 +33,7 @@ test('payment history scopes customers and restricts the administrator transacti
     const response = await get('/api/payments/my?page=2&limit=12');
     assert.equal(response.status, 200); assert.equal(response.headers.get('cache-control'), 'no-store');
     const data = await response.json(); assert.equal(data.total, 13); assert.equal(data.totalPages, 2); assert.equal(data.items.length, 1);
+    assert.equal(data.totalRevenue, 162.5);
     assert.deepEqual(seen.filter, { customerEmail: user.email }); assert.equal(seen.projection.transactionId, 1); assert.equal(seen.projection.stripeSessionId, undefined);
     assert.ok(data.items.every(record => record.customerEmail === user.email)); assert.equal(data.items[0].stripeSessionId, undefined);
     assert.equal((await get('/api/admin/transactions')).status, 403);
@@ -39,6 +41,7 @@ test('payment history scopes customers and restricts the administrator transacti
     user.role = 'admin'; assert.equal((await get('/api/payments/my')).status, 403);
     const allResponse = await get('/api/admin/transactions'); assert.equal(allResponse.status, 200); assert.equal(allResponse.headers.get('cache-control'), 'no-store');
     const all = await allResponse.json(); assert.equal(all.total, 15); assert.equal(all.items.length, 12); assert.deepEqual(seen.filter, {});
+    assert.equal(all.totalRevenue, 187.5);
     for (const role of ['admin', 'customer']) {
       user.role = role; const path = role === 'admin' ? '/api/admin/transactions' : '/api/payments/my';
       for (const query of ['?customerEmail=other@example.com', '?page=0', '?page=1e2', '?page=1&page=2', '?limit=101', '?limit=-1', '?page[$ne]=1']) assert.equal((await get(path + query)).status, 400, query);

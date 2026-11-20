@@ -4,6 +4,8 @@ Express and MongoDB API for FixMate, a pay-after-completion repair service platf
 
 ## Current progress
 
+The demo catalog now contains 21 approved services, three in each of the seven categories. Rerunning the seed adds missing records and preserves existing service edits, connected bookings, and verified payments. The earlier milestone notes below describe the initial twelve-service seed.
+
 Optional repair-photo enhancement: POST /api/bookings accepts problemImage when supplied, validates HTTPS ImgBB URLs, and stores it on the booking. Omitted/empty images are accepted; non-image-provider URLs, credentials, custom ports, malformed types, and oversized URLs are rejected. Private owner-scoped booking APIs return the attachment, and the administrator projection includes it. All 32 server tests pass; demo:check also verified successful requests both without and with a photo and attachment visibility in the technician queue.
 
 Part 20 disables adaptive pricing on new Checkout sessions so the app consistently displays USD. A complete $40 sandbox browser payment, real webhook HTTP 200 delivery, customer/admin history display, and idempotent replay were verified; no real money moved. All 31 server tests pass. Vercel/Render hosting settings are prepared but not deployed yet; see ../docs/DEPLOYMENT.md.
